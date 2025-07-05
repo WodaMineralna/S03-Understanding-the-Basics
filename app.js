@@ -26,17 +26,19 @@ const server = http.createServer((req, res) => {
       body.push(chunk);
     });
 
-    req.on("end", () => {
-      const parsedBody = Buffer.concat(body).toString(); // Output: 'message={TEXT}'   -   message because input name="message"
+    // these functions are registered, they are callback(s) - to be called sometimes in the future
+    // thus - they dont block the Event Loop
+    return req.on("end", () => {
+      const parsedBody = Buffer.concat(body).toString(); // Output: 'message={TEXT}'   -   "message" because input has a prop 'name'="message"
       console.log(parsedBody);
 
       const message = parsedBody.split("=")[1];
-      fs.writeFileSync("message.txt", message);
+      fs.writeFile("message.txt", message, (err) => {
+        res.statusCode = 302; // ^ 302 - Redirection
+        res.setHeader("Location", "/");
+        return res.end();
+      });
     });
-
-    res.statusCode = 302; // ^ 302 - Redirection
-    res.setHeader("Location", "/");
-    return res.end();
   }
 
   res.setHeader("Content-Type", "text/html"); // * here we specify that we we pass HTML Code as a response
